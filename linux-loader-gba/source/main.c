@@ -37,27 +37,17 @@ int main(void) {
 
 	/* handle incoming ping */
 	while (1) {
-		while (!(REG_JSTAT & 0x2)) {
-			printf("REG_JSTAT: 0x%04x\n", REG_JSTAT);
-		}
-
+		while (!(REG_JSTAT & 0x2));
 		rx = REG_JOYRE;
 
-		if (!crcValid(rx)) {
-			//puts("crc invalid");
+		if (!crcValid(rx))
 			continue;
-		}
 
 		if ((rx & PKT_CLASS) != CLASS_SYS ||
 		   (rx & PKT_SUBCMD) != SYS_PING  ||
 		   (rx & PKT_CMD_ID) != 0         ||
-#if 0
-		   (rx & PKT_FMT)    != FMT_IMM   ||
-#endif
-		   (rx & PKT_DATA)   != (0x4849 << DATA_SHIFT)) {
-			printf("BS packet: 0x%08lX\n", rx);
+		   (rx & PKT_DATA)   != (0x4849 << DATA_SHIFT))
 			continue;
-		}
 
 		break;
 	}
@@ -88,9 +78,6 @@ int main(void) {
 		if ((rx & PKT_CLASS) != CLASS_SYS ||
 		   (rx & PKT_SUBCMD) != SYS_ACK   ||
 		   (rx & PKT_CMD_ID) != 0         ||
-#if 0
-		   (rx & PKT_FMT)    != FMT_IMM   ||
-#endif
 		   (rx & PKT_DATA)   != 0)
 			continue;
 
@@ -98,6 +85,30 @@ int main(void) {
 	}
 	puts("Got ping reply ACK");
 
+	/* wait to be told to load the kernel */
+	while (1) {
+		while (!(REG_JSTAT & 0x2));
+		rx = REG_JOYRE;
+
+		if (!crcValid(rx)) {
+			puts("invalid crc");
+			continue;
+		}
+
+		if ((rx & PKT_CLASS) != CLASS_SYS       ||
+		   (rx & PKT_SUBCMD) != SYS_KERNEL_LOAD ||
+		   (rx & PKT_CMD_ID) != 0               ||
+		   (rx & PKT_DATA)   != 0) {
+			printf("BS packet: 0x%08lX\n", rx);
+			continue;
+		}
+
+		break;
+	}
+
+	/* ACK it */
+	REG_JOYTR = crc(CLASS_SYS | SYS_ACK | 0 /* id */ | 0 /* data */);
+	puts("All is well. Booting kernel...");
 
 	/* uc-rv32ima-gba entry */
 	app_main();
