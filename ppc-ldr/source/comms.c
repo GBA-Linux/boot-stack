@@ -414,7 +414,40 @@ static void loadKernel(void) {
 }
 
 static void memRead(void) {
+	u32 rx, addr, length, tmp[2];
+	u16 crcVal, crcValCalc;
+	int i;
 
+	csend(CLASS_SYS | SYS_ACK | 0 /* id */ | 0 /* data */);
+	addr = tmp[0] = srecv();
+	length = tmp[1] = srecv();
+	printf("Got MEM_READ with addr=0x%08x, length=%u\n", addr, length);
+
+	rx = srecv();
+	if ((rx & PKT_CLASS)  != CLASS_SYS      ||
+	    (rx & PKT_SUBCMD) != SYS_MW_TX_DONE ||
+	    (rx & PKT_CMD_ID) != 0)
+		return;
+
+	crcVal = (rx & PKT_DATA) >> DATA_SHIFT;
+	crcValCalc = calc_crc16((u8 *)tmp, 2 * sizeof(u32));
+	if (crcVal != crcValCalc)
+		return;
+
+	/* all checks out, ACK */
+	csend(CLASS_SYS | SYS_ACK | 0 /* id */ | 0 /* data */);
+
+	for (i = 0; i < length; i++)
+		send(*(u32 *)M_GuestToHost(addr + (i * sizeof(u32))));
+
+	/* sent memory, send SYS_MW_TX_DONE */
+	/* FIXME: if this crosses a memblock boundary, we're screwed */
+	crcVal = calc_crc16((u8 *)M_GuestToHost(addr), length * sizeof(u32));
+	csend(CLASS_SYS | SYS_MW_TX_DONE | 0 /* id */ | (crcVal << DATA_SHIFT) /* data */);
+
+	puts("read done");
+
+	return;
 }
 
 static void memWrite(void) {

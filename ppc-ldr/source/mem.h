@@ -21,8 +21,10 @@ struct _memState {
 };
 
 extern struct _memState M_State;
+extern void *M_GuestToHost(u32 addr);
 
 /* this seems to be as high as we can go before stuff starts to break :( */
 #define MEM1_BUF_SZ (21 * 1024 * 1024)
+
 
 #endif /* _MEM_H */
