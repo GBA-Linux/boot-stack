@@ -23,6 +23,10 @@
 #define LDR_PATH  "/apps/gba-linux-loader/linux-loader.gba"
 #define KERN_PATH "/apps/gba-linux-loader/linux.elf"
 
+/* stupid libogc not exporting functions.... */
+extern u64 gettime(void);
+extern u32 diff_msec(u64 start,u64 end);
+
 static enum {
 	STATE_READ_LINUX_LOADER, /* reading Linux loader */
 	STATE_WAIT_GBA,          /* waiting for GBA to be connected */
@@ -126,6 +130,7 @@ static u32 recv() {
 #define srecv() __builtin_bswap32(recv())
 
 static void send(u32 msg) { 
+	u64 ticks, ticksNew;
 	cmdbuf[0] = 0x15;
 	cmdbuf[1] = (msg >> 0) & 0xFF;
 	cmdbuf[2] = (msg >> 8) & 0xFF;
@@ -135,7 +140,12 @@ static void send(u32 msg) {
 	transval = 0;
 	resbuf[0] = 0;
 	SI_Transfer(GBA_CHAN, cmdbuf, 5, resbuf, 1, transcb, SI_TRANS_DELAY);
-	while (transval == 0);
+	ticks = gettime();
+	while (transval == 0) {
+		ticksNew = gettime();
+		if (diff_msec(ticks, ticksNew) > 60)
+			break; /* give up */
+	}
 }
 
 
@@ -375,26 +385,28 @@ static void readKernel(void) {
 static void loadKernel(void) {
 	u32 rx;
 
-	while (1) {
-		csend(CLASS_SYS | SYS_KERNEL_LOAD | 0 /* id */ | 0);
-		rx = srecv();
+	puts("sending...");
+	csend(CLASS_SYS | SYS_KERNEL_LOAD | 0 /* id */ | 0);
+	puts("receiving...");
+	rx = srecv();
 
-		/* nonsense or corrupt */
-		if (!crcValid(rx))
-			return;
-
-		/* check for ACK */
-		if ((rx & PKT_CLASS)  != CLASS_SYS ||
-		    (rx & PKT_SUBCMD) != SYS_ACK   ||
-		    (rx & PKT_CMD_ID) != 0         ||
-		    (rx & PKT_DATA)   != 0) {
-			//printf("BS packet: 0x%08X\n", rx);
-			return;
-		}
-
-		/* valid ACK */
-		break;
+	/* nonsense or corrupt */
+	if (!crcValid(rx)) {
+		puts("invalid crc");
+		return;
 	}
+
+	/* check for ACK */
+	if ((rx & PKT_CLASS)  != CLASS_SYS ||
+	    (rx & PKT_SUBCMD) != SYS_ACK   ||
+	    (rx & PKT_CMD_ID) != 0         ||
+	    (rx & PKT_DATA)   != 0) {
+		printf("BS packet: 0x%08X\n", rx);
+		return;
+	}
+
+	/* valid ACK */
+	puts("GBA is now preparing to boot the kernel, entering main communications loop...");
 
 	curState = STATE_READY;
 
