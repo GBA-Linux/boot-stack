@@ -35,14 +35,18 @@ tryStart:
 		while (!(REG_JSTAT & 0x2));
 		rx = REG_JOYRE;
 
-		if (!crcValid(rx))
+		if (!crcValid(rx)) {
+			puts("invalid CRC (ACK 1)");
 			goto tryStart;
+		}
 
 		if ((rx & PKT_CLASS) != CLASS_SYS ||
 		   (rx & PKT_SUBCMD) != SYS_ACK   ||
 		   (rx & PKT_CMD_ID) != 0         ||
-		   (rx & PKT_DATA)   != 0)
+		   (rx & PKT_DATA)   != 0) {
+			puts("invalid data (ACK 1)");
 			goto tryStart;
+		}
 
 		break;
 	}
@@ -61,14 +65,18 @@ tryStart:
 		while (!(REG_JSTAT & 0x2));
 		rx = REG_JOYRE;
 
-		if (!crcValid(rx))
+		if (!crcValid(rx)) {
+			puts("invalid CRC (ACK 2)");
 			goto tryStart;
+		}
 
 		if ((rx & PKT_CLASS) != CLASS_SYS ||
 		   (rx & PKT_SUBCMD) != SYS_ACK   ||
 		   (rx & PKT_CMD_ID) != 0         ||
-		   (rx & PKT_DATA)   != 0)
+		   (rx & PKT_DATA)   != 0) {
+			puts("invalid data (ACK 2)");
 			goto tryStart;
+		}
 
 		break;
 	}
@@ -86,14 +94,18 @@ tryStart:
 
 	if ((rx & PKT_CLASS) != CLASS_SYS      ||
 	   (rx & PKT_SUBCMD) != SYS_MW_TX_DONE ||
-	   (rx & PKT_CMD_ID) != 0)
+	   (rx & PKT_CMD_ID) != 0) {
+		puts("invalid data (MW_TX_DONE)");
 		goto tryStart;
+	}
 
 	crcVal = (rx & PKT_DATA) >> DATA_SHIFT;
 	calcCrcVal = calc_crc16(buf, tmp[1]);
 
-	if (crcVal != calcCrcVal)
+	if (crcVal != calcCrcVal) {
+		printf("invalid CRC on data (0x%08x != 0x%08x)\n", crcVal, calcCrcVal);
 		goto tryStart;
+	}
 
 	/* success! */
 	return;
