@@ -7,6 +7,7 @@
 #include <gba.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "comms.h"
 
 /* uc-rv32ima-gba entry */
@@ -109,6 +110,8 @@ int main(void) {
 	/* ACK it */
 	REG_JOYTR = crc(CLASS_SYS | SYS_ACK | 0 /* id */ | 0 /* data */);
 	puts("All is well. Booting kernel...");
+	sleep(1);
+	REG_JOYTR = 0;
 
 	/* uc-rv32ima-gba entry */
 	app_main();
