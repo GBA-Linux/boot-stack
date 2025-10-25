@@ -36,15 +36,21 @@ static inline u32 parity(u32 msg) {
 #define PKT_CLASS       (7 << CLASS_SHIFT)
 #define MKCLASS(x)      ((x << CLASS_SHIFT) & PKT_CLASS)
 #define CLASS_SYS       MKCLASS(0)
+#define CLASS_MEM       MKCLASS(1)
 
 /* subcmd stuff in bits 3-5 */
 #define SUBCMD_SHIFT    (3)
 #define PKT_SUBCMD      (7 << SUBCMD_SHIFT)
 #define MKSUBCMD(x)     ((x << SUBCMD_SHIFT) & PKT_SUBCMD)
-#define SYS_ACK         MKSUBCMD(1)
-#define SYS_PING        MKSUBCMD(2)
-#define SYS_PING_REPLY  MKSUBCMD(3)
-#define SYS_KERNEL_LOAD MKSUBCMD(4)
+
+#define SYS_ACK         MKSUBCMD(1) /* SYS stuff starts at subcmd 1 to avoid confusion with class=0 subcmd=0 */
+#define SYS_MW_TX_DONE  MKSUBCMD(2)
+#define SYS_PING        MKSUBCMD(3)
+#define SYS_PING_REPLY  MKSUBCMD(4)
+#define SYS_KERNEL_LOAD MKSUBCMD(5)
+
+#define MEM_READ        MKSUBCMD(0)
+#define MEM_WRITE       MKSUBCMD(1)
 
 /* cmd id stuff in bits 6-7 */
 #define CMD_ID_SHIFT    (6)
@@ -76,6 +82,22 @@ static inline u8 calc_crc8(const u8 *data, int len) {
 			crc = (crc & 0x80) ?
 				(u8)((crc << 1) ^ 0x07) :
 				(u8)(crc << 1);
+		}
+	}
+	return crc;
+}
+
+/* CRC-16 CCITT (polynomial 0x1021), initial 0xffff */
+static inline u16 calc_crc16(const u8 *data, int len) {
+	u16 crc = 0xffff;
+	int i;
+	while (len--) {
+		crc ^= ((u16)*data++) << 8;
+		for (i = 0; i < 8; ++i) {
+			if (crc & 0x8000)
+				crc = (crc << 1) ^ 0x1021;
+			else
+				crc <<= 1;
 		}
 	}
 	return crc;
