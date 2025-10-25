@@ -413,6 +413,14 @@ static void loadKernel(void) {
 	return;
 }
 
+static void memRead(void) {
+
+}
+
+static void memWrite(void) {
+
+}
+
 static void doEmuComms(void) {
 	u32 rx;
 
@@ -437,6 +445,7 @@ static void doEmuComms(void) {
 				printf("Spurious ACK for command id %d\n", id);
 
 		}
+		case SYS_MW_TX_DONE:
 		case SYS_PING: /* TODO: maybe actually implement ping + reply for mainloop */
 		case SYS_PING_REPLY:
 		case SYS_KERNEL_LOAD: {
@@ -445,6 +454,23 @@ static void doEmuComms(void) {
 		}
 		default: {
 			printf("Unknown SYS subcmd: 0x%08X\n", (rx & PKT_SUBCMD) >> SUBCMD_SHIFT);
+			break;
+		}
+		}
+		break;
+	}
+	case CLASS_MEM: {
+		switch (rx & PKT_SUBCMD) {
+		case MEM_READ: {
+			memRead();
+			break;
+		}
+		case MEM_WRITE: {
+			memWrite();
+			break;
+		}
+		default: {
+			printf("Unknown MEM subcmd: 0x%08X\n", (rx & PKT_SUBCMD) >> SUBCMD_SHIFT);
 			break;
 		}
 		}
