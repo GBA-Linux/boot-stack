@@ -350,16 +350,16 @@ static void readKernel(void) {
 		exit(1);
 	}
 
-	fp = fopen(LDR_PATH, "rb");
+	fp = fopen(KERN_PATH, "rb");
 	if (!fp) {
-		puts("Failed to open " LDR_PATH "!");
+		puts("Failed to open " KERN_PATH "!");
 		sleep(5);
 		exit(1);
 	}
 
 	if (fread(M_State.blocks[0].ptr.w8, statBuf.st_size, 1, fp) != 1) {
 		fclose(fp);
-		puts("Failed to read " LDR_PATH "!");
+		puts("Failed to read " KERN_PATH "!");
 		sleep(5);
 		exit(1);
 	}
@@ -367,6 +367,8 @@ static void readKernel(void) {
 	fclose(fp);
 
 	printf("Successfully read GBA Linux Kernel (%llu bytes)\n", statBuf.st_size);
+
+	curState = STATE_LOAD_KERNEL;
 	return;
 }
 
