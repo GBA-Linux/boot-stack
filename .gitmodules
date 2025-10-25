@@ -1,0 +1,3 @@
+[submodule "linux-loader-gba/3rdparty/uc-rv32ima-gba"]
+	path = linux-loader-gba/3rdparty/uc-rv32ima-gba
+	url = https://github.com/GBA-Linux/uc-rv32ima-gba

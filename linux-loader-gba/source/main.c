@@ -8,7 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "comms.h"
-#include "emu.h"
+
+/* uc-rv32ima-gba entry */
+extern void app_main(void);
 
 int main(void) {
 	u32 rx;
@@ -96,9 +98,9 @@ int main(void) {
 	}
 	puts("Got ping reply ACK");
 
-	while (1)
-		E_Step(); /* execute 1 instruction */
 
+	/* uc-rv32ima-gba entry */
+	app_main();
 
 	__builtin_unreachable();
 }

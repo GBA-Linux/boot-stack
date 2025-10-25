@@ -22,7 +22,7 @@ include $(DEVKITARM)/gba_rules
 #---------------------------------------------------------------------------------
 TARGET		:= $(notdir $(CURDIR))_mb
 BUILD		:= build
-SOURCES		:= source
+SOURCES		:= source source/3rdparty/uc-rv32ima-gba
 INCLUDES	:= include
 DATA		:=
 MUSIC		:=
