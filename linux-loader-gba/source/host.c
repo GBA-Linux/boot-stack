@@ -93,7 +93,7 @@ tryStart:
 	for (i = 0; i < tmp[1]; i++) {
 		u32 *buf32 = (u32 *)buf;
 
-		printf("Waiting for word %d/%d\n", i, tmp[1]);
+		//printf("Waiting for word %d/%d\n", i, tmp[1]);
 		while (!(REG_JSTAT & 0x2));
 		buf32[i] = __builtin_bswap32(REG_JOYRE); /* put it back into BE temporarily for the CRC */
 	}
@@ -105,7 +105,7 @@ tryStart:
 	   (rx & PKT_SUBCMD) != SYS_MW_TX_DONE ||
 	   (rx & PKT_CMD_ID) != 0) {
 		puts("invalid data (MW_TX_DONE)");
-		while(1);
+		//while(1);
 		goto tryStart;
 	}
 
@@ -114,10 +114,11 @@ tryStart:
 
 	if (crcVal != calcCrcVal) {
 		printf("invalid CRC on data (0x%08x != 0x%08x)\n", crcVal, calcCrcVal);
-		while(1);
+		//while(1);
 		goto tryStart;
 	}
 
+	/* we actually do want to keep it in BE, we care about it being byte-identical, not word-interpretation-identical */
 #if 0
 	for (i = 0; i < tmp[1]; i++) {
 		u32 *buf32 = (u32 *)buf;

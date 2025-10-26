@@ -447,15 +447,12 @@ static void memRead(void) {
 		return;
 	}
 
-	sleep(1);
 	/* all checks out, ACK */
-	puts("sending ACK NOW!");
 	csend(CLASS_SYS | SYS_ACK | 0 /* id */ | 0 /* data */);
 
-	sleep(1);
-	puts("sending data NOW!");
 	for (i = 0; i < length; i++) {
-		printf("Sending word %d / %d\n", i, length);
+		//printf("Sending word %d / %d\n", i, length);
+		usleep(1000); /* give it a bit between writes, it seems to desync if we spam it too hard */
 		send(*(u32 *)M_GuestToHost(addr + (i * sizeof(u32))));
 		usleep(1000);
 	}
@@ -498,6 +495,7 @@ static void doEmuComms(void) {
 			else
 				printf("Spurious ACK for command id %d\n", id);
 
+			break;
 		}
 		case SYS_MW_TX_DONE:
 		case SYS_PING: /* TODO: maybe actually implement ping + reply for mainloop */
@@ -536,7 +534,6 @@ static void doEmuComms(void) {
 		break;
 	}
 	}
-
 }
 
 void C_Process(void) {
