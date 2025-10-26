@@ -89,10 +89,12 @@ static inline u8 calc_crc8(const u8 *data, int len) {
 
 /* CRC-16 CCITT (polynomial 0x1021), initial 0xffff */
 static inline u16 calc_crc16(const u8 *data, int len) {
-	u16 crc = 0xffff;
+	u16 crc = 0xffff, a;
 	int i;
 	while (len--) {
-		crc ^= ((u16)*data++) << 8;
+		a = ((u16)*data++) << 8;
+		//printf("crc16ing: 0x%04x (len = %d)\n", a, len);
+		crc ^= a;
 		for (i = 0; i < 8; ++i) {
 			if (crc & 0x8000)
 				crc = (crc << 1) ^ 0x1021;

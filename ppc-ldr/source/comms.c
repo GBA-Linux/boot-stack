@@ -419,26 +419,47 @@ static void memRead(void) {
 	int i;
 
 	csend(CLASS_SYS | SYS_ACK | 0 /* id */ | 0 /* data */);
-	addr = tmp[0] = srecv();
+
+	while (1) {
+		rx = srecv();
+		if ((rx & PKT_CLASS) == CLASS_MEM &&
+		    (rx & PKT_SUBCMD) == MEM_READ)
+			continue; /* HACK: fix weird issue where it reads the MEM_READ command multiple times */
+		break;
+	}
+
+	addr = tmp[0] = rx;
 	length = tmp[1] = srecv();
 	printf("Got MEM_READ with addr=0x%08x, length=%u\n", addr, length);
 
 	rx = srecv();
 	if ((rx & PKT_CLASS)  != CLASS_SYS      ||
 	    (rx & PKT_SUBCMD) != SYS_MW_TX_DONE ||
-	    (rx & PKT_CMD_ID) != 0)
+	    (rx & PKT_CMD_ID) != 0) {
+		printf("Invalid data (0x%08x) for MW_TX_DONE 1\n", rx);
 		return;
+	}
 
 	crcVal = (rx & PKT_DATA) >> DATA_SHIFT;
 	crcValCalc = calc_crc16((u8 *)tmp, 2 * sizeof(u32));
-	if (crcVal != crcValCalc)
+	if (crcVal != crcValCalc) {
+		printf("Invalid CRC (0x%04x != 0x%04x) for addr+len\n", crcVal, crcValCalc);
 		return;
+	}
 
+	sleep(1);
 	/* all checks out, ACK */
+	puts("sending ACK NOW!");
 	csend(CLASS_SYS | SYS_ACK | 0 /* id */ | 0 /* data */);
 
-	for (i = 0; i < length; i++)
+	sleep(1);
+	puts("sending data NOW!");
+	for (i = 0; i < length; i++) {
+		printf("Sending word %d / %d\n", i, length);
 		send(*(u32 *)M_GuestToHost(addr + (i * sizeof(u32))));
+		usleep(1000);
+	}
+	puts("doing CRCs and sending it");
 
 	/* sent memory, send SYS_MW_TX_DONE */
 	/* FIXME: if this crosses a memblock boundary, we're screwed */
@@ -483,10 +504,11 @@ static void doEmuComms(void) {
 		case SYS_PING_REPLY:
 		case SYS_KERNEL_LOAD: {
 			printf("Got weird SYS subcmd: 0x%08X\n", (rx & PKT_SUBCMD) >> SUBCMD_SHIFT);
+			sleep(1);
 			break;
 		}
 		default: {
-			printf("Unknown SYS subcmd: 0x%08X\n", (rx & PKT_SUBCMD) >> SUBCMD_SHIFT);
+			printf("Unknown SYS subcmd: 0x%08X (rx=0x%08x)\n", (rx & PKT_SUBCMD) >> SUBCMD_SHIFT, rx);
 			break;
 		}
 		}
